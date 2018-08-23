@@ -1,2 +1,2 @@
 # kafka-streams-shopping
-Sample applications that showcase an event sourcing application using Kafka Streams
+Sample application that showcase an event sourcing application using Kafka Streams

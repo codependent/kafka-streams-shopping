@@ -17,7 +17,7 @@ import javax.annotation.PreDestroy
 
 const val COUNTS_STORE = "counts-store"
 
-@Service
+//@Service
 class WordService(@Value("\${spring.application.name}") private val applicationName: String,
                   @Value("\${kafka.boostrap-servers}") private val kafkaBootstrapServers: String) {
 
@@ -53,4 +53,11 @@ class WordService(@Value("\${spring.application.name}") private val applicationN
         return keyValueStore.get(word)
     }
 
+}
+
+fun main(args : Array<String>) {
+    val wordService = WordService("main", "localhost:9092")
+    wordService.initializeStreams()
+    val wordCount = wordService.getWordCount("hello")
+    println(wordCount)
 }

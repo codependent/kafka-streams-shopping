@@ -2,12 +2,13 @@ package com.codependent.kafkastreams.customer.serdes
 
 import org.apache.kafka.common.serialization.Serializer
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.module.kotlin.KotlinModule
 import org.apache.kafka.common.errors.SerializationException
 
 
 class JsonPojoSerializer<T> : Serializer<T> {
 
-    private val objectMapper = ObjectMapper()
+    private val objectMapper = ObjectMapper().registerModule(KotlinModule())
 
     override fun configure(p0: MutableMap<String, *>?, p1: Boolean) {}
 

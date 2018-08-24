@@ -8,12 +8,9 @@ class CustomerServiceTest {
 
     private val customerService = CustomerService("test", "localhost:9092")
 
-    init {
-        customerService.initializeStreams()
-    }
-
     @Test
     fun shouldCreateCustomer() {
+        customerService.initializeStreams()
         customerService.createCustomer(Customer("55444333D", "Joey"))
         val customer = customerService.getCustomer("55444333D")
         Assert.assertNotNull(customer)

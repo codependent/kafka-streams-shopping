@@ -3,8 +3,8 @@ package com.codependent.kafkastreams.customer.service
 import com.codependent.kafkastreams.customer.dto.Customer
 import com.codependent.kafkastreams.customer.serdes.JsonPojoDeserializer
 import com.codependent.kafkastreams.customer.serdes.JsonPojoSerializer
-import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.module.kotlin.KotlinModule
 import org.apache.kafka.clients.producer.KafkaProducer
 import org.apache.kafka.clients.producer.Producer
 import org.apache.kafka.clients.producer.ProducerConfig
@@ -37,7 +37,7 @@ class CustomerService(@Value("\${spring.application.name}") private val applicat
 
     private lateinit var streams: KafkaStreams
     private val logger = LoggerFactory.getLogger(this.javaClass)
-    private val objectMapper = ObjectMapper()
+    private val objectMapper = ObjectMapper().registerModule(KotlinModule())
 
     @PostConstruct
     fun initializeStreams() {
@@ -45,12 +45,12 @@ class CustomerService(@Value("\${spring.application.name}") private val applicat
         val props = Properties()
         props[StreamsConfig.APPLICATION_ID_CONFIG] = applicationName
         props[StreamsConfig.BOOTSTRAP_SERVERS_CONFIG] = kafkaBootstrapServers
-        props[StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG] = Serdes.String().javaClass
 
         val builder = StreamsBuilder()
         builder.table(CUSTOMERS_TOPIC,
                 Consumed.with(Serdes.String(), customerSerde),
-                Materialized.`as`<String, Customer, KeyValueStore<Bytes, ByteArray>>(CUSTOMERS_STORE))
+                Materialized.`as`(CUSTOMERS_STORE))
+                .toStream().to("customers-processed")
 
         streams = KafkaStreams(builder.build(), props)
         streams.start()
@@ -63,8 +63,8 @@ class CustomerService(@Value("\${spring.application.name}") private val applicat
     }
 
     fun getCustomer(id: String): Customer {
-        val keyValueStore = streams.store(CUSTOMERS_STORE, QueryableStoreTypes.keyValueStore<String, JsonNode>())
-        return objectMapper.treeToValue(keyValueStore.get(id), Customer::class.java)
+        val keyValueStore = streams.store(CUSTOMERS_STORE, QueryableStoreTypes.keyValueStore<String, Customer>())
+        return keyValueStore.get(id)
     }
 
     fun createCustomer(customer: Customer) {
@@ -85,4 +85,12 @@ class CustomerService(@Value("\${spring.application.name}") private val applicat
         return KafkaProducer(props, StringSerializer(), JsonPojoSerializer<Customer>())
     }
 
+}
+
+fun main(args : Array<String>) {
+    val customerService = CustomerService("main", "localhost:9092")
+    customerService.initializeStreams()
+    customerService.createCustomer(Customer("53", "Joey"))
+    val customer = customerService.getCustomer("53")
+    println(customer)
 }

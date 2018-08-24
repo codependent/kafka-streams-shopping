@@ -49,7 +49,9 @@ class CustomerService(@Value("\${spring.application.name}") private val applicat
         val builder = StreamsBuilder()
         builder.table(CUSTOMERS_TOPIC,
                 Consumed.with(Serdes.String(), customerSerde),
-                Materialized.`as`(CUSTOMERS_STORE))
+                Materialized.`as`<String, Customer, KeyValueStore<Bytes, ByteArray>>(CUSTOMERS_STORE)
+                        .withKeySerde(Serdes.String())
+                        .withValueSerde(customerSerde))
                 .toStream().to("customers-processed")
 
         streams = KafkaStreams(builder.build(), props)
@@ -87,7 +89,7 @@ class CustomerService(@Value("\${spring.application.name}") private val applicat
 
 }
 
-fun main(args : Array<String>) {
+fun main(args: Array<String>) {
     val customerService = CustomerService("main", "localhost:9092")
     customerService.initializeStreams()
     customerService.createCustomer(Customer("53", "Joey"))

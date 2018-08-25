@@ -17,10 +17,13 @@ import org.apache.kafka.streams.Consumed
 import org.apache.kafka.streams.KafkaStreams
 import org.apache.kafka.streams.StreamsBuilder
 import org.apache.kafka.streams.StreamsConfig
+import org.apache.kafka.streams.errors.InvalidStateStoreException
 import org.apache.kafka.streams.kstream.Materialized
 import org.apache.kafka.streams.kstream.Produced
+import org.apache.kafka.streams.processor.StateStore
 import org.apache.kafka.streams.state.KeyValueStore
 import org.apache.kafka.streams.state.QueryableStoreTypes
+import org.apache.kafka.streams.state.ReadOnlyKeyValueStore
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
@@ -66,7 +69,14 @@ class CustomerService(@Value("\${spring.application.name}") private val applicat
     }
 
     fun getCustomer(id: String): Customer? {
-        val keyValueStore = streams.store(CUSTOMERS_STORE, QueryableStoreTypes.keyValueStore<String, Customer>())
+        var keyValueStore: ReadOnlyKeyValueStore<String, Customer>? = null
+        while(keyValueStore == null) {
+            try {
+                keyValueStore = streams.store(CUSTOMERS_STORE, QueryableStoreTypes.keyValueStore<String, Customer>())
+            } catch (ex: InvalidStateStoreException) {
+                ex.printStackTrace()
+            }
+        }
         val customer = keyValueStore.get(id)
         return customer
     }

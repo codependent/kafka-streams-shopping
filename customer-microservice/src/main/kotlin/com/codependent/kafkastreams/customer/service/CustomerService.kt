@@ -18,6 +18,7 @@ import org.apache.kafka.streams.KafkaStreams
 import org.apache.kafka.streams.StreamsBuilder
 import org.apache.kafka.streams.StreamsConfig
 import org.apache.kafka.streams.kstream.Materialized
+import org.apache.kafka.streams.kstream.Produced
 import org.apache.kafka.streams.state.KeyValueStore
 import org.apache.kafka.streams.state.QueryableStoreTypes
 import org.slf4j.LoggerFactory
@@ -52,7 +53,7 @@ class CustomerService(@Value("\${spring.application.name}") private val applicat
                 Materialized.`as`<String, Customer, KeyValueStore<Bytes, ByteArray>>(CUSTOMERS_STORE)
                         .withKeySerde(Serdes.String())
                         .withValueSerde(customerSerde))
-                .toStream().to("customers-processed")
+                .toStream().to("customers-processed", Produced.with(Serdes.String(), customerSerde))
 
         streams = KafkaStreams(builder.build(), props)
         streams.start()
@@ -64,14 +65,15 @@ class CustomerService(@Value("\${spring.application.name}") private val applicat
         streams.close()
     }
 
-    fun getCustomer(id: String): Customer {
+    fun getCustomer(id: String): Customer? {
         val keyValueStore = streams.store(CUSTOMERS_STORE, QueryableStoreTypes.keyValueStore<String, Customer>())
-        return keyValueStore.get(id)
+        val customer = keyValueStore.get(id)
+        return customer
     }
 
     fun createCustomer(customer: Customer) {
         val producer = createProducer()
-        val record = ProducerRecord<String, Customer>(CUSTOMERS_TOPIC, customer.name, customer)
+        val record = ProducerRecord<String, Customer>(CUSTOMERS_TOPIC, customer.id, customer)
 
         val metadata = producer.send(record).get()
         logger.info("{}", metadata)
@@ -95,4 +97,5 @@ fun main(args: Array<String>) {
     customerService.createCustomer(Customer("53", "Joey"))
     val customer = customerService.getCustomer("53")
     println(customer)
+    customerService.stopStreams()
 }

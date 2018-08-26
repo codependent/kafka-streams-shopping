@@ -12,7 +12,10 @@ import org.apache.kafka.common.serialization.Serde
 import org.apache.kafka.common.serialization.Serdes
 import org.apache.kafka.common.serialization.StringSerializer
 import org.apache.kafka.common.utils.Bytes
-import org.apache.kafka.streams.*
+import org.apache.kafka.streams.Consumed
+import org.apache.kafka.streams.KafkaStreams
+import org.apache.kafka.streams.StreamsBuilder
+import org.apache.kafka.streams.StreamsConfig
 import org.apache.kafka.streams.errors.InvalidStateStoreException
 import org.apache.kafka.streams.kstream.Materialized
 import org.apache.kafka.streams.kstream.Produced
@@ -50,9 +53,9 @@ class InventoryService(@Value("\${spring.application.name}") private val applica
         val builder = StreamsBuilder()
 
         builder.stream(INVENTORY_TOPIC, Consumed.with(Serdes.String(), productSerde))
-                /*.map { key, value ->
-                    KeyValue(key, value)
-                }*/
+                .mapValues { _, value ->
+                    value
+                }
                 .groupByKey().aggregate({ Product("0", "", ProductType.ELECTRONICS, "", 0) },
                         { _, value, aggregate ->
                             value.units = aggregate.units + value.units

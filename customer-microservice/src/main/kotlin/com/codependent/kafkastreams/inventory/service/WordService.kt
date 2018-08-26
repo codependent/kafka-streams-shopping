@@ -1,4 +1,4 @@
-package com.codependent.kafkastreams.customer.service
+package com.codependent.kafkastreams.inventory.service
 
 import org.apache.kafka.common.serialization.Serdes
 import org.apache.kafka.common.utils.Bytes
@@ -10,7 +10,6 @@ import org.apache.kafka.streams.kstream.Produced
 import org.apache.kafka.streams.state.KeyValueStore
 import org.apache.kafka.streams.state.QueryableStoreTypes
 import org.springframework.beans.factory.annotation.Value
-import org.springframework.stereotype.Service
 import java.util.*
 import javax.annotation.PostConstruct
 import javax.annotation.PreDestroy

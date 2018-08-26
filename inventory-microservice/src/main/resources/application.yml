@@ -1,0 +1,10 @@
+spring:
+  application:
+    name: customer-microservice
+
+kafka:
+  boostrap-servers: localhost:9092
+
+logging:
+  level:
+    org.apache.kafka: info

@@ -1,4 +1,4 @@
-package com.codependent.kafkastreams.customer
+package com.codependent.kafkastreams.inventory
 
 import org.springframework.boot.SpringApplication
 import org.springframework.boot.autoconfigure.SpringBootApplication

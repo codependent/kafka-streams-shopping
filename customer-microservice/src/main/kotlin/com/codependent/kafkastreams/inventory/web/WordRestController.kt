@@ -1,6 +1,6 @@
-package com.codependent.kafkastreams.customer.web
+package com.codependent.kafkastreams.inventory.web
 
-import com.codependent.kafkastreams.customer.service.WordService
+import com.codependent.kafkastreams.inventory.service.WordService
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestMapping

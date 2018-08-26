@@ -1,4 +1,4 @@
-package com.codependent.kafkastreams.customer.serdes
+package com.codependent.kafkastreams.inventory.serdes
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.KotlinModule

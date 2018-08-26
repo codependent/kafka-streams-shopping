@@ -1,10 +1,8 @@
-package com.codependent.kafkastreams.customer.service
+package com.codependent.kafkastreams.inventory.service
 
-import com.codependent.kafkastreams.customer.dto.Customer
-import com.codependent.kafkastreams.customer.serdes.JsonPojoDeserializer
-import com.codependent.kafkastreams.customer.serdes.JsonPojoSerializer
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.module.kotlin.KotlinModule
+import com.codependent.kafkastreams.inventory.dto.Customer
+import com.codependent.kafkastreams.inventory.serdes.JsonPojoDeserializer
+import com.codependent.kafkastreams.inventory.serdes.JsonPojoSerializer
 import org.apache.kafka.clients.producer.KafkaProducer
 import org.apache.kafka.clients.producer.Producer
 import org.apache.kafka.clients.producer.ProducerConfig
@@ -20,7 +18,6 @@ import org.apache.kafka.streams.StreamsConfig
 import org.apache.kafka.streams.errors.InvalidStateStoreException
 import org.apache.kafka.streams.kstream.Materialized
 import org.apache.kafka.streams.kstream.Produced
-import org.apache.kafka.streams.processor.StateStore
 import org.apache.kafka.streams.state.KeyValueStore
 import org.apache.kafka.streams.state.QueryableStoreTypes
 import org.apache.kafka.streams.state.ReadOnlyKeyValueStore
@@ -40,8 +37,8 @@ class CustomerService(@Value("\${spring.application.name}") private val applicat
                       @Value("\${kafka.boostrap-servers}") private val kafkaBootstrapServers: String) {
 
     private lateinit var streams: KafkaStreams
+    private lateinit var customerProducer: Producer<String, Customer>
     private val logger = LoggerFactory.getLogger(this.javaClass)
-    private val objectMapper = ObjectMapper().registerModule(KotlinModule())
 
     @PostConstruct
     fun initializeStreams() {
@@ -49,6 +46,8 @@ class CustomerService(@Value("\${spring.application.name}") private val applicat
         val props = Properties()
         props[StreamsConfig.APPLICATION_ID_CONFIG] = applicationName
         props[StreamsConfig.BOOTSTRAP_SERVERS_CONFIG] = kafkaBootstrapServers
+
+        customerProducer = createCustomerProducer()
 
         val builder = StreamsBuilder()
         builder.table(CUSTOMERS_TOPIC,
@@ -65,33 +64,32 @@ class CustomerService(@Value("\${spring.application.name}") private val applicat
     @PreDestroy
     fun stopStreams() {
         logger.info("*********** Closing streams ***********")
+        customerProducer.close()
         streams.close()
     }
 
     fun getCustomer(id: String): Customer? {
         var keyValueStore: ReadOnlyKeyValueStore<String, Customer>? = null
-        while(keyValueStore == null) {
+        while (keyValueStore == null) {
             try {
                 keyValueStore = streams.store(CUSTOMERS_STORE, QueryableStoreTypes.keyValueStore<String, Customer>())
             } catch (ex: InvalidStateStoreException) {
                 ex.printStackTrace()
+                Thread.sleep(100)
             }
         }
-        val customer = keyValueStore.get(id)
-        return customer
+        return keyValueStore.get(id)
     }
 
     fun createCustomer(customer: Customer) {
-        val producer = createProducer()
         val record = ProducerRecord<String, Customer>(CUSTOMERS_TOPIC, customer.id, customer)
 
-        val metadata = producer.send(record).get()
+        val metadata = customerProducer.send(record).get()
         logger.info("{}", metadata)
-        producer.flush()
-        producer.close()
+        customerProducer.flush()
     }
 
-    private fun createProducer(): Producer<String, Customer> {
+    private fun createCustomerProducer(): Producer<String, Customer> {
         val props = Properties()
         props[ProducerConfig.BOOTSTRAP_SERVERS_CONFIG] = kafkaBootstrapServers
         props[ProducerConfig.CLIENT_ID_CONFIG] = "CustomerService"

@@ -1,6 +1,6 @@
-package com.codependent.kafkastreams.customer.service
+package com.codependent.kafkastreams.inventory.service
 
-import com.codependent.kafkastreams.customer.dto.Customer
+import com.codependent.kafkastreams.inventory.dto.Customer
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.BeforeAll

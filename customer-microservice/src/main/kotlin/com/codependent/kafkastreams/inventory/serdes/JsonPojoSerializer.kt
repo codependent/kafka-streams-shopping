@@ -1,4 +1,4 @@
-package com.codependent.kafkastreams.customer.serdes
+package com.codependent.kafkastreams.inventory.serdes
 
 import org.apache.kafka.common.serialization.Serializer
 import com.fasterxml.jackson.databind.ObjectMapper

@@ -26,18 +26,14 @@ class ProductServiceTest {
     @Test
     fun shouldAddAndDeleteProduct() {
         inventoryService.addProduct(Product("0", "Kindle", ProductType.ELECTRONICS, "A Kindle", 10))
-        var product = inventoryService.getProduct("0")
-        println(product)
         inventoryService.addProduct(Product("0", "Kindle", ProductType.ELECTRONICS, "A Kindle", 5))
         Thread.sleep(5000)
-        product = inventoryService.getProduct("0")
-        println(product)
+        var product = inventoryService.getProduct("0")
         assertNotNull(product)
         assertEquals(15, product?.units)
         inventoryService.deleteProduct("0")
         Thread.sleep(5000)
         product = inventoryService.getProduct("0")
-        println(product)
         assertNull(product)
     }
 }

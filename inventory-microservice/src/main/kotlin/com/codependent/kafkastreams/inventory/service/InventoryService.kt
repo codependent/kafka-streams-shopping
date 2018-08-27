@@ -58,8 +58,13 @@ class InventoryService(@Value("\${spring.application.name}") private val applica
                 }
                 .groupByKey().aggregate({ Product("0", "", ProductType.ELECTRONICS, "", 0) },
                         { _, value, aggregate ->
-                            value.units = aggregate.units + value.units
-                            value
+                            if (value.units == -1) {
+                                null
+                            } else {
+                                value.units = aggregate.units + value.units
+                                value
+                            }
+
                         },
                         Materialized.`as`<String, Product, KeyValueStore<Bytes, ByteArray>>(INVENTORY_STORE)
                                 .withKeySerde(Serdes.String())
@@ -99,7 +104,7 @@ class InventoryService(@Value("\${spring.application.name}") private val applica
     }
 
     fun deleteProduct(id: String) {
-        val record = ProducerRecord<String, Product>(INVENTORY_TOPIC, id, null)
+        val record = ProducerRecord<String, Product>(INVENTORY_TOPIC, id, Product(id, "", ProductType.ELECTRONICS, "", -1))
         val metadata = inventoryProducer.send(record).get()
         logger.info("{}", metadata)
         inventoryProducer.flush()

@@ -2,6 +2,7 @@ package com.codependent.kafkastreams.inventory.service
 
 import com.codependent.kafkastreams.inventory.dto.Product
 import com.codependent.kafkastreams.inventory.dto.ProductType
+import com.codependent.kafkastreams.inventory.streams.StreamsConfiguration
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeAll
@@ -11,11 +12,12 @@ import org.junit.jupiter.api.TestInstance
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class ProductServiceTest {
 
-    private val inventoryService = InventoryService("test", "localhost:9092")
+    private val streamsConfiguration = StreamsConfiguration()
+    private val inventoryService = InventoryService(streamsConfiguration.topology(), "test", "localhost:9092")
 
     @BeforeAll
     fun initializeStreams() {
-        inventoryService.initializeStreams()
+        inventoryService.startStreams()
     }
 
     @AfterAll

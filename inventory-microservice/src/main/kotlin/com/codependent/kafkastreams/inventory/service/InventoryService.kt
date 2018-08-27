@@ -12,10 +12,7 @@ import org.apache.kafka.common.serialization.Serde
 import org.apache.kafka.common.serialization.Serdes
 import org.apache.kafka.common.serialization.StringSerializer
 import org.apache.kafka.common.utils.Bytes
-import org.apache.kafka.streams.Consumed
-import org.apache.kafka.streams.KafkaStreams
-import org.apache.kafka.streams.StreamsBuilder
-import org.apache.kafka.streams.StreamsConfig
+import org.apache.kafka.streams.*
 import org.apache.kafka.streams.errors.InvalidStateStoreException
 import org.apache.kafka.streams.kstream.Materialized
 import org.apache.kafka.streams.kstream.Produced
@@ -34,45 +31,24 @@ const val INVENTORY_TOPIC = "inventory"
 const val INVENTORY_STORE = "inventory-store"
 
 @Service
-class InventoryService(@Value("\${spring.application.name}") private val applicationName: String,
+class InventoryService(val topology: Topology,
+                       @Value("\${spring.application.name}") private val applicationName: String,
                        @Value("\${kafka.boostrap-servers}") private val kafkaBootstrapServers: String) {
 
     private lateinit var streams: KafkaStreams
-    private lateinit var inventoryProducer: Producer<String, Product>
+    private val inventoryProducer: Producer<String, Product>
     private val logger = LoggerFactory.getLogger(this.javaClass)
 
+    init {
+        inventoryProducer = createInventoryProducer()
+    }
+
     @PostConstruct
-    fun initializeStreams() {
-        val productSerde: Serde<Product> = Serdes.serdeFrom(JsonPojoSerializer<Product>(), JsonPojoDeserializer(Product::class.java))
+    fun startStreams() {
         val props = Properties()
         props[StreamsConfig.APPLICATION_ID_CONFIG] = applicationName
         props[StreamsConfig.BOOTSTRAP_SERVERS_CONFIG] = kafkaBootstrapServers
-
-        inventoryProducer = createInventoryProducer()
-
-        val builder = StreamsBuilder()
-
-        builder.stream(INVENTORY_TOPIC, Consumed.with(Serdes.String(), productSerde))
-                .mapValues { _, value ->
-                    value
-                }
-                .groupByKey().aggregate({ Product("0", "", ProductType.ELECTRONICS, "", 0) },
-                        { _, value, aggregate ->
-                            if (value.units == -1) {
-                                null
-                            } else {
-                                value.units = aggregate.units + value.units
-                                value
-                            }
-
-                        },
-                        Materialized.`as`<String, Product, KeyValueStore<Bytes, ByteArray>>(INVENTORY_STORE)
-                                .withKeySerde(Serdes.String())
-                                .withValueSerde(productSerde))
-                .toStream().to("inventory-processed", Produced.with(Serdes.String(), productSerde))
-
-
-        streams = KafkaStreams(builder.build(), props)
+        streams = KafkaStreams(topology, props)
         streams.start()
     }
 
@@ -110,6 +86,7 @@ class InventoryService(@Value("\${spring.application.name}") private val applica
         inventoryProducer.flush()
     }
 
+
     private fun createInventoryProducer(): Producer<String, Product> {
         val props = Properties()
         props[ProducerConfig.BOOTSTRAP_SERVERS_CONFIG] = kafkaBootstrapServers
@@ -122,7 +99,7 @@ class InventoryService(@Value("\${spring.application.name}") private val applica
 /*
 fun main(args: Array<String>) {
     val inventoryService = InventoryService("main", "localhost:9092")
-    inventoryService.initializeStreams()
+    inventoryService.startStreams()
     inventoryService.addProduct(Product("1", "Kindle", ProductType.ELECTRONICS, "A Kindle", 10))
     inventoryService.addProduct(Product("1", "Kindle", ProductType.ELECTRONICS, "A Kindle", 5))
     val product = inventoryService.getProduct("1")

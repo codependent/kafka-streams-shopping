@@ -98,7 +98,7 @@ class CustomerService(@Value("\${spring.application.name}") private val applicat
     }
 
 }
-
+/*
 fun main(args: Array<String>) {
     val customerService = CustomerService("main", "localhost:9092")
     customerService.initializeStreams()
@@ -106,4 +106,4 @@ fun main(args: Array<String>) {
     val customer = customerService.getCustomer("53")
     println(customer)
     customerService.stopStreams()
-}
+}*/

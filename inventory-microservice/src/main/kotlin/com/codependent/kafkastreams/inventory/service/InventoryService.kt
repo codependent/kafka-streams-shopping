@@ -119,7 +119,7 @@ class InventoryService(@Value("\${spring.application.name}") private val applica
     }
 
 }
-
+/*
 fun main(args: Array<String>) {
     val inventoryService = InventoryService("main", "localhost:9092")
     inventoryService.initializeStreams()
@@ -128,4 +128,4 @@ fun main(args: Array<String>) {
     val product = inventoryService.getProduct("1")
     println(product)
     inventoryService.stopStreams()
-}
+}*/

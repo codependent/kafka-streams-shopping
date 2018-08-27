@@ -25,17 +25,19 @@ class ProductServiceTest {
 
     @Test
     fun shouldAddAndDeleteProduct() {
-        //inventoryService.deleteProduct("0")
         inventoryService.addProduct(Product("0", "Kindle", ProductType.ELECTRONICS, "A Kindle", 10))
-        inventoryService.getProduct("0")
+        var product = inventoryService.getProduct("0")
+        println(product)
         inventoryService.addProduct(Product("0", "Kindle", ProductType.ELECTRONICS, "A Kindle", 5))
-        Thread.sleep(2000)
-        val product = inventoryService.getProduct("0")
+        Thread.sleep(5000)
+        product = inventoryService.getProduct("0")
+        println(product)
         assertNotNull(product)
         assertEquals(15, product?.units)
         inventoryService.deleteProduct("0")
-        val deletedProduct = inventoryService.getProduct("0")
-        Thread.sleep(2000)
-        assertNull(deletedProduct)
+        Thread.sleep(5000)
+        product = inventoryService.getProduct("0")
+        println(product)
+        assertNull(product)
     }
 }

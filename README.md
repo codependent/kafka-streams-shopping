@@ -1,5 +1,7 @@
 # kafka-streams-shopping
 
+[![Build Status](https://semaphoreci.com/api/v1/codependent/kafka-streams-shopping/branches/develop/badge.svg)](https://semaphoreci.com/codependent/kafka-streams-shopping)
+
 Sample application that showcase an event sourcing application using Kafka Streams
 
 ## Start Kafka

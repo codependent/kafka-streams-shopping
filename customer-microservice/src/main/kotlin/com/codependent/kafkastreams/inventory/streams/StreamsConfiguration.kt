@@ -1,7 +1,6 @@
 package com.codependent.kafkastreams.inventory.streams
 
-import com.codependent.kafkastreams.inventory.dto.Product
-import com.codependent.kafkastreams.inventory.dto.ProductType
+import com.codependent.kafkastreams.inventory.dto.Customer
 import com.codependent.kafkastreams.inventory.serdes.JsonPojoDeserializer
 import com.codependent.kafkastreams.inventory.serdes.JsonPojoSerializer
 import org.apache.kafka.clients.producer.KafkaProducer
@@ -23,8 +22,8 @@ import java.util.*
 import javax.annotation.PostConstruct
 import javax.annotation.PreDestroy
 
-const val INVENTORY_TOPIC = "inventory"
-const val INVENTORY_STORE = "inventory-store"
+const val CUSTOMERS_TOPIC = "customers"
+const val CUSTOMERS_STORE = "customers-store"
 
 @Configuration
 class StreamsConfiguration(@Value("\${spring.application.name}") private val applicationName: String,
@@ -38,35 +37,22 @@ class StreamsConfiguration(@Value("\${spring.application.name}") private val app
     }
 
     @PreDestroy
-    fun stopStreams(kafkaStreams: KafkaStreams, inventoryProducer: Producer<String, Product>) {
+    fun stopStreams(kafkaStreams: KafkaStreams, customerProducer: Producer<String, Customer>) {
         logger.info("*********** Closing streams ***********")
-        inventoryProducer.close()
+        customerProducer.close()
         kafkaStreams.close()
     }
 
     @Bean
     fun topology(): Topology {
-        val productSerde: Serde<Product> = Serdes.serdeFrom(JsonPojoSerializer<Product>(), JsonPojoDeserializer(Product::class.java))
+        val customerSerde: Serde<Customer> = Serdes.serdeFrom(JsonPojoSerializer<Customer>(), JsonPojoDeserializer(Customer::class.java))
         val builder = StreamsBuilder()
-        builder.stream(INVENTORY_TOPIC, Consumed.with(Serdes.String(), productSerde))
-                .mapValues { _, value ->
-                    value
-                }
-                .groupByKey().aggregate({ Product("0", "", ProductType.ELECTRONICS, "", 0) },
-                        { _, value, aggregate ->
-                            if (value.units == -1) {
-                                null
-                            } else {
-                                value.units = aggregate.units + value.units
-                                value
-                            }
-
-                        },
-                        Materialized.`as`<String, Product, KeyValueStore<Bytes, ByteArray>>(INVENTORY_STORE)
-                                .withKeySerde(Serdes.String())
-                                .withValueSerde(productSerde))
-                .toStream().to("inventory-processed", Produced.with(Serdes.String(), productSerde))
-
+        builder.table(CUSTOMERS_TOPIC,
+                Consumed.with(Serdes.String(), customerSerde),
+                Materialized.`as`<String, Customer, KeyValueStore<Bytes, ByteArray>>(CUSTOMERS_STORE)
+                        .withKeySerde(Serdes.String())
+                        .withValueSerde(customerSerde))
+                .toStream().to("customers-processed", Produced.with(Serdes.String(), customerSerde))
 
         return builder.build()
     }
@@ -80,11 +66,11 @@ class StreamsConfiguration(@Value("\${spring.application.name}") private val app
     }
 
     @Bean
-    fun inventoryProducer(): Producer<String, Product> {
+    fun customerProducer(): Producer<String, Customer> {
         val props = Properties()
         props[ProducerConfig.BOOTSTRAP_SERVERS_CONFIG] = kafkaBootstrapServers
-        props[ProducerConfig.CLIENT_ID_CONFIG] = "InventoryService"
-        return KafkaProducer(props, StringSerializer(), JsonPojoSerializer<Product>())
+        props[ProducerConfig.CLIENT_ID_CONFIG] = "CustomerService"
+        return KafkaProducer(props, StringSerializer(), JsonPojoSerializer<Customer>())
     }
 
 }

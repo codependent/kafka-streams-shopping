@@ -10,19 +10,21 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class ProductServiceTest {
+class ProductServiceIntegrationTest {
 
-    private val streamsConfiguration = StreamsConfiguration()
-    private val inventoryService = InventoryService(streamsConfiguration.topology(), "test", "localhost:9092")
+    private val streamsConfiguration = StreamsConfiguration("test", "localhost:9092")
+    private val kafkaStreams = streamsConfiguration.kafkaStreams()
+    private val inventoryProducer = streamsConfiguration.inventoryProducer()
+    private val inventoryService = InventoryService(kafkaStreams, inventoryProducer)
 
     @BeforeAll
     fun initializeStreams() {
-        inventoryService.startStreams()
+        streamsConfiguration.startStreams(kafkaStreams)
     }
 
     @AfterAll
     fun stopStreams() {
-        inventoryService.stopStreams()
+        streamsConfiguration.stopStreams(kafkaStreams, inventoryProducer)
     }
 
     @Test

@@ -2,62 +2,22 @@ package com.codependent.kafkastreams.inventory.service
 
 import com.codependent.kafkastreams.inventory.dto.Product
 import com.codependent.kafkastreams.inventory.dto.ProductType
-import com.codependent.kafkastreams.inventory.serdes.JsonPojoDeserializer
-import com.codependent.kafkastreams.inventory.serdes.JsonPojoSerializer
-import org.apache.kafka.clients.producer.KafkaProducer
+import com.codependent.kafkastreams.inventory.streams.INVENTORY_STORE
+import com.codependent.kafkastreams.inventory.streams.INVENTORY_TOPIC
 import org.apache.kafka.clients.producer.Producer
-import org.apache.kafka.clients.producer.ProducerConfig
 import org.apache.kafka.clients.producer.ProducerRecord
-import org.apache.kafka.common.serialization.Serde
-import org.apache.kafka.common.serialization.Serdes
-import org.apache.kafka.common.serialization.StringSerializer
-import org.apache.kafka.common.utils.Bytes
-import org.apache.kafka.streams.*
+import org.apache.kafka.streams.KafkaStreams
 import org.apache.kafka.streams.errors.InvalidStateStoreException
-import org.apache.kafka.streams.kstream.Materialized
-import org.apache.kafka.streams.kstream.Produced
-import org.apache.kafka.streams.state.KeyValueStore
 import org.apache.kafka.streams.state.QueryableStoreTypes
 import org.apache.kafka.streams.state.ReadOnlyKeyValueStore
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
-import java.util.*
-import javax.annotation.PostConstruct
-import javax.annotation.PreDestroy
-
-
-const val INVENTORY_TOPIC = "inventory"
-const val INVENTORY_STORE = "inventory-store"
 
 @Service
-class InventoryService(val topology: Topology,
-                       @Value("\${spring.application.name}") private val applicationName: String,
-                       @Value("\${kafka.boostrap-servers}") private val kafkaBootstrapServers: String) {
+class InventoryService(private val streams: KafkaStreams,
+                       private val inventoryProducer: Producer<String, Product>) {
 
-    private lateinit var streams: KafkaStreams
-    private val inventoryProducer: Producer<String, Product>
     private val logger = LoggerFactory.getLogger(this.javaClass)
-
-    init {
-        inventoryProducer = createInventoryProducer()
-    }
-
-    @PostConstruct
-    fun startStreams() {
-        val props = Properties()
-        props[StreamsConfig.APPLICATION_ID_CONFIG] = applicationName
-        props[StreamsConfig.BOOTSTRAP_SERVERS_CONFIG] = kafkaBootstrapServers
-        streams = KafkaStreams(topology, props)
-        streams.start()
-    }
-
-    @PreDestroy
-    fun stopStreams() {
-        logger.info("*********** Closing streams ***********")
-        inventoryProducer.close()
-        streams.close()
-    }
 
     fun getProduct(id: String): Product? {
         var keyValueStore: ReadOnlyKeyValueStore<String, Product>? = null
@@ -84,15 +44,6 @@ class InventoryService(val topology: Topology,
         val metadata = inventoryProducer.send(record).get()
         logger.info("{}", metadata)
         inventoryProducer.flush()
-    }
-
-
-    private fun createInventoryProducer(): Producer<String, Product> {
-        val props = Properties()
-        props[ProducerConfig.BOOTSTRAP_SERVERS_CONFIG] = kafkaBootstrapServers
-        props[ProducerConfig.CLIENT_ID_CONFIG] = "InventoryService"
-
-        return KafkaProducer(props, StringSerializer(), JsonPojoSerializer<Product>())
     }
 
 }

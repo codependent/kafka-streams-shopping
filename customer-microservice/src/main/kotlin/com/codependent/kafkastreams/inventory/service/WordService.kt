@@ -10,13 +10,14 @@ import org.apache.kafka.streams.kstream.Produced
 import org.apache.kafka.streams.state.KeyValueStore
 import org.apache.kafka.streams.state.QueryableStoreTypes
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.stereotype.Service
 import java.util.*
 import javax.annotation.PostConstruct
 import javax.annotation.PreDestroy
 
 const val COUNTS_STORE = "counts-store"
 
-//@Service
+@Service
 class WordService(@Value("\${spring.application.name}") private val applicationName: String,
                   @Value("\${kafka.boostrap-servers}") private val kafkaBootstrapServers: String) {
 
@@ -53,10 +54,10 @@ class WordService(@Value("\${spring.application.name}") private val applicationN
     }
 
 }
-
+/*
 fun main(args : Array<String>) {
     val wordService = WordService("main", "localhost:9092")
     wordService.initializeStreams()
     val wordCount = wordService.getWordCount("hello")
     println(wordCount)
-}
+}*/
